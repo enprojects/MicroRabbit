@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using MediatR;
 using MicroRabbit.Banking.Data.Context;
+using MicroRabbit.Banking.Domain.CommandHandlers;
 using MicroRabbit.Infra.Ioc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -44,7 +45,8 @@ namespace MIcroRabbit.Banking.Api
                 c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info { Title = "Banking microservice", Version = "v1" });
             });
 
-            services.AddMediatR(typeof(Startup));
+         
+            services.AddMediatR(typeof(TransferCommandHandler).GetTypeInfo().Assembly);
             services.RegisterServices();
         }
             // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

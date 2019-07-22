@@ -19,12 +19,12 @@ namespace MicroRabbit.Banking.Domain.CommandHandlers
             _bus = bus;
         }
 
-        public async  Task<bool> Handle(CreateTransferCommand request, CancellationToken cancellationToken)
+        public  Task<bool> Handle(CreateTransferCommand request, CancellationToken cancellationToken)
         {
             // publish event to rabbit 
 
-            // _bus.Publish(new TransferCreatedEvent(request.From, request.To, request.Amount));
-            return await Task.FromResult(true);
+            _bus.Publish(new TransferCreatedEvent(request.From, request.To, request.Amount));
+            return  Task.FromResult(true);
         }
     }
 }
