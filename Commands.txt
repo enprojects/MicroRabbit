@@ -1,0 +1,10 @@
+https://stackoverflow.com/questions/39644544/can-i-generate-script-of-a-migration-with-ef-code-first-and-net-core
+
+You can use dotnet core cli to generate script
+
+dotnet ef migrations script 
+Also you can put this to file with new power shell out-file command.
+
+dotnet ef migrations script | out-file ./script.sql
+
+Script-Migration -Output "script.sql"
