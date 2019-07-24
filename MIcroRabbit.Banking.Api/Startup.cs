@@ -45,9 +45,22 @@ namespace MIcroRabbit.Banking.Api
                 c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info { Title = "Banking microservice", Version = "v1" });
             });
 
-         
-            services.AddMediatR(typeof(TransferCommandHandler).GetTypeInfo().Assembly);
+            var assemblyName = typeof(TransferCommandHandler).GetTypeInfo().Assembly.FullName;
+
+            var assemblyComandsName = AppDomain.CurrentDomain.GetAssemblies()
+                                     .Where(x => x.GetName()
+                                     .Name == Configuration.GetValue<string>("CommandsAssmbly"))
+                                     .FirstOrDefault();
+            if (assemblyComandsName == null)
+            {
+                throw new ArgumentNullException("Commands assembly name is missing... ");
+            }
+
+            // services.AddMediatR(assemblyComandsName/*typeof(TransferCommandHandler).GetTypeInfo().Assembly*/);
             services.RegisterServices();
+            services.AddMediatR(DependencyContainer.GetAllCommandsAssemblies());
+
+
         }
             // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
             public void Configure(IApplicationBuilder app, IHostingEnvironment env)
