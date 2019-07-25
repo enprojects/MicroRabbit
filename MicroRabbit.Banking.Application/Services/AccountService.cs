@@ -6,6 +6,7 @@ using MicroRabbit.Banking.Domain.Models;
 using MicroRabbit.Domain.Core.Bus;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace MicroRabbit.Banking.Application.Services
@@ -21,7 +22,7 @@ namespace MicroRabbit.Banking.Application.Services
             _bus = bus;
         }
         public IEnumerable<Account> GetAccounts()
-        {
+        { 
             return _repository.GetAccountes();
         }
 
@@ -33,7 +34,7 @@ namespace MicroRabbit.Banking.Application.Services
                 accountTransfer.TransferAmount
                 );
 
-         var gg  =    _bus.SendCommand(createTransferCommnad);
+            var gg = _bus.SendCommand(createTransferCommnad);
         }
     }
 }

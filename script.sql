@@ -19,7 +19,7 @@ CREATE TABLE [Accounts] (
 GO
 
 INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-VALUES (N'20190721102949_Init-migration', N'2.2.6-servicing-10079');
+VALUES (N'20190725083924_InitMigration', N'2.2.6-servicing-10079');
 
 GO
 

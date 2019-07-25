@@ -8,3 +8,9 @@ Also you can put this to file with new power shell out-file command.
 dotnet ef migrations script | out-file ./script.sql
 
 Script-Migration -Output "script.sql"
+
+-------------
+
+Add-Migration "whatever name" -Context TransferDbContext (Create first entry for mogration Db and scheme ..)
+Update-DatabasE --script -Context AnyContextObjex   or
+Script-Migration -Output "script.sql" (inputtOsCRIPT)
