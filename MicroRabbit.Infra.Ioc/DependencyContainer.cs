@@ -10,6 +10,13 @@ using System.Linq;
 using System.Reflection;
 
 using MicroRabbit.Domain.Core.Commands;
+using MicroRabbit.Transfer.Application.Interfaces;
+using MicroRabbit.Transfer.Application.Services;
+using MicroRabbit.Transfer.Domain.Interfaces;
+using MicroRabbit.Transfer.Data.Repository;
+using MicroRabbit.Transfer.Domain.Events;
+using MicroRabbit.Transfer.Domain.EventHandles;
+using MediatR;
 
 namespace MicroRabbit.Infra.Ioc
 {
@@ -21,12 +28,25 @@ namespace MicroRabbit.Infra.Ioc
     {
         public static void RegisterServices(this IServiceCollection services)
         {
-            services.AddTransient<IEventBus, RabbitMqBus>();
+            services.AddSingleton<IEventBus, RabbitMqBus>(sp=> {
+
+                var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+                return new RabbitMqBus(sp.GetService<IMediator>(), scopeFactory);
+            });
 
             //  Application layer 
             services.AddTransient<IAccountRepository, AccountRepository>();
             services.AddTransient<IAccountService, AccountService>();
+
+            services.AddTransient<ITransferService, TransferService>();
+            services.AddTransient<ITransferRepository, TransferRepository>();
+
+            //domain events
+            services.AddTransient<IEventHandler<TransferCreatedEvent>, TransferEventHandler>();
+            services.AddTransient<TransferEventHandler>();
         }
+    
+    
 
         public static Assembly[] GetAllCommandsAssemblies()
         {

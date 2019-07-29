@@ -8,7 +8,7 @@ namespace MicroRabbit.Transfer.Domain.Models
     {
         public int Id { get; set; }
         public string  FromAccount { get; set; }
-        public string FToAccount { get; set; }
+        public string ToAccount { get; set; }
         public Decimal TransferAmount { get; set; }
 
 

@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MediatR;
+using MicroRabbit.Domain.Core.Bus;
 using MicroRabbit.Infra;
 using MicroRabbit.Infra.Ioc;
 using MicroRabbit.Transfer.Data.Context;
+using MicroRabbit.Transfer.Domain.EventHandles;
+using MicroRabbit.Transfer.Domain.Events;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -47,7 +50,6 @@ namespace MicroRabbit.Transfer.Api
             services.RegisterServices();
             services.AddMediatR(DependencyContainer.GetAllCommandsAssemblies());
 
-
         }
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -71,6 +73,14 @@ namespace MicroRabbit.Transfer.Api
                 opt.SwaggerEndpoint("/swagger/v1/swagger.json", "My Transfer microservice");
             });
             app.UseMvc();
+            ConfigureEventBus(app);
+
+        }
+
+        private static void ConfigureEventBus(IApplicationBuilder app)
+        {
+            var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
+            eventBus.Subscribe<TransferCreatedEvent, TransferEventHandler>();
         }
     }
 }
