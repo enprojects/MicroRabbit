@@ -11,6 +11,8 @@ namespace MicroRabbit.Transfer.Domain.EventHandles
 {
     public class TransferEventHandler : IEventHandler<TransferCreatedEvent>
     {
+        public string EventName => nameof(TransferCreatedEvent);
+
         private readonly ITransferRepository _transferReposiotory;
         public TransferEventHandler(ITransferRepository transferRepository)
         {
@@ -25,6 +27,11 @@ namespace MicroRabbit.Transfer.Domain.EventHandles
                 TransferAmount = @event.Amount
             });
             return Task.CompletedTask;
+        }
+
+
+        public void Test() {
+
         }
     }
 }

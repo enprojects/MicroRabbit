@@ -16,6 +16,7 @@ namespace MicroRabbit.Domain.Core.Bus
         where TEvent : Event
     {
         Task Handle(TEvent @event);
+         void Test();
     }
 
 

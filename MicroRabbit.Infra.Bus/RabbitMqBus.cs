@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using MicroRabbit.Banking.Domain.Events;
 using MicroRabbit.Domain.Core.Bus;
 using MicroRabbit.Domain.Core.Commands;
 using MicroRabbit.Domain.Core.Events;
@@ -20,15 +21,13 @@ namespace MicroRabbit.Infra.Bus
     {
 
         private readonly IMediator _mediator;
-        private readonly Dictionary<string, List<Type>> _handlers;
-        private readonly List<Type> _eventType;
-        private readonly IServiceScopeFactory _servicesScopeFactory;
-        public RabbitMqBus(IMediator mediator, IServiceScopeFactory servicesScopeFactory)
+        private readonly Dictionary<Type, List<Type>> _handlers;
+        private readonly IServiceProvider _sp;
+        public RabbitMqBus(IMediator mediator, IServiceProvider sp)
         {
             _mediator = mediator;
-            _handlers = new Dictionary<string, List<Type>>();
-            _eventType = new List<Type>();
-            _servicesScopeFactory = servicesScopeFactory;
+            _handlers = new Dictionary<Type, List<Type>>();          
+            _sp = sp;
         }
 
         public Task SendCommand<T>(T command) where T : Command
@@ -53,33 +52,20 @@ namespace MicroRabbit.Infra.Bus
             }
         }
 
-        public void Subscribe<T, TH>()
-            where T : Event
-            where TH : IEventHandler<T>
+        public void SubscribeAdvanced<TEvnt>() where TEvnt : Event
         {
-            var eventName = typeof(T).Name;
-            var handlerType = typeof(TH);
 
-            if (!_eventType.Contains(typeof(T)))
+            var eventType = typeof(TEvnt);
+            if (!_handlers.ContainsKey(typeof(TEvnt)))
             {
-                _eventType.Add(typeof(T));
+                _handlers.Add(eventType, new List<Type>());
             }
 
-            if (!_handlers.ContainsKey(eventName))
-            {
-                _handlers.Add(eventName, new List<Type>());
-            }
-
-            if (_handlers[eventName].Any(s => s.GetType() == handlerType))
-            {
-                throw new ArgumentException($"Handler Type {handlerType.Name} already registed ");
-            }
-
-            _handlers[eventName].Add(handlerType);
-
-            StartBasicConsume<T>();
+            _handlers[eventType].Add(typeof(IEventHandler<TEvnt>));
+            StartBasicConsume<TEvnt>();
         }
 
+         
         private void StartBasicConsume<T>() where T : Event
         {
             var factory = new ConnectionFactory()
@@ -109,7 +95,7 @@ namespace MicroRabbit.Infra.Bus
             {
                 await ProccessEvent(eventName, message);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
 
@@ -118,33 +104,28 @@ namespace MicroRabbit.Infra.Bus
 
         private async Task ProccessEvent(string eventName, string message)
         {
-            if (_handlers.ContainsKey(eventName))
+            if (_handlers.Count > 0)
             {
-                using (var scope =_servicesScopeFactory.CreateScope())
+                foreach (var keyPair in _handlers)
                 {
-                    var subscriptions = _handlers[eventName];
-
-                    foreach (var subscription in subscriptions)
+                    if (keyPair.Key.Name == eventName)
                     {
-                        var handler = scope.ServiceProvider.GetService(subscription);    //Activator.CreateInstance(subscription);
-                        if (handler != null)
-                        {
-
-                            var eventType = _eventType.SingleOrDefault(t => t.Name == eventName);
-                            var @event = JsonConvert.DeserializeObject(message, eventType);
-                            var concreteType = typeof(IEventHandler<>).MakeGenericType(eventType);
-                            await (Task)concreteType.GetMethod("Handle").Invoke(handler, new object[] { @event });
-
-                            //dynamic cType = typeof(IEventHandler<>).MakeGenericType(eventType);
-                            //cType.Handle(@event);
-                        }
+                            foreach (var handlerType in keyPair.Value)
+                            {
+                            var data = JsonConvert.DeserializeObject(message, keyPair.Key);// Convert.ChangeType(JsonConvert.DeserializeObject(message, keyPair.Key), keyPair.Key);
+                                dynamic handler = _sp.GetService(handlerType);
+                                await (Task)handler.Handle((dynamic)data);
+                            }
                     }
                 }
-
-
-                
-
             }
+
+            await Task.CompletedTask;
         }
+
+
+
     }
+
 }
+

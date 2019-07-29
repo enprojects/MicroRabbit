@@ -1,6 +1,7 @@
 ﻿
 using MicroRabbit.Domain.Core.Bus;
 using MicroRabbit.Transfer.Application.Interfaces;
+using MicroRabbit.Transfer.Domain.Commands;
 using MicroRabbit.Transfer.Domain.Interfaces;
 using MicroRabbit.Transfer.Domain.Models;
 using System;
@@ -24,6 +25,8 @@ namespace MicroRabbit.Transfer.Application.Services
 
         public IEnumerable<TransferLog> GetTransferLogs()
         {
+            _bus.SendCommand(new TestCInstruction(DateTime.Now));
+
             return _trnsferRepository.GetTransfers();
 
         }

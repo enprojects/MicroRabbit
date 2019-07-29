@@ -17,6 +17,8 @@ using MicroRabbit.Transfer.Data.Repository;
 using MicroRabbit.Transfer.Domain.Events;
 using MicroRabbit.Transfer.Domain.EventHandles;
 using MediatR;
+using System.Collections.Generic;
+
 
 namespace MicroRabbit.Infra.Ioc
 {
@@ -28,11 +30,7 @@ namespace MicroRabbit.Infra.Ioc
     {
         public static void RegisterServices(this IServiceCollection services)
         {
-            services.AddSingleton<IEventBus, RabbitMqBus>(sp=> {
-
-                var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
-                return new RabbitMqBus(sp.GetService<IMediator>(), scopeFactory);
-            });
+          
 
             //  Application layer 
             services.AddTransient<IAccountRepository, AccountRepository>();
@@ -44,9 +42,82 @@ namespace MicroRabbit.Infra.Ioc
             //domain events
             services.AddTransient<IEventHandler<TransferCreatedEvent>, TransferEventHandler>();
             services.AddTransient<TransferEventHandler>();
+
+              ResgistrAllEvents(services);
+            services.AddSingleton<IEventBus, RabbitMqBus>(sp => {
+
+                return new RabbitMqBus(sp.GetService<IMediator>(),sp);
+            });
+
+          
         }
-    
-    
+
+        public static List<Type> GetAllEventHandlerType()
+        {
+            // get all types from all assemblies 
+            var allTypesFromAssemb =  AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(x => x.GetTypes())
+                .ToList();
+            // filter all by the event type interface 
+            return allTypesFromAssemb .Where(x => x.GetInterfaces().Any(t => IsTypeImplementGenericInterface(t)))
+                                       .ToList();
+        }
+
+        public static void ResgistrAllEvents(this IServiceCollection services)
+        {           
+            List<Type> handlerTypes = GetAllEventHandlerType();
+
+             // register all event type handlers  
+            foreach (Type type in handlerTypes)
+            {
+                AddHandler(services, type);
+            }
+        }
+
+        private static void AddHandler(IServiceCollection services, Type type)
+        {
+            // get te interface inplemented by this type, in this case command, query , event 
+            var getInterfaceType = type.GetInterfaces().Single(interfaceType => IsTypeImplementGenericInterface(interfaceType));
+            services.AddTransient(getInterfaceType, (sp) =>
+            {
+                object obj = Activator.CreateInstance(type, InstantiateConstructorParam(type, services));
+                return obj;
+
+            });
+        }
+
+        private static object [] InstantiateConstructorParam(Type type , IServiceCollection services)
+        {
+            var parametersValues = new List<object>();
+            var  ctor  = type.GetConstructors().First();
+            var parameters = ctor.GetParameters();
+           
+            if (parameters.Count() > 0) {
+
+                foreach (var parmeter in parameters)
+                {
+                    Type parameterType = parmeter.ParameterType;
+                    if (!IsTypeImplementGenericInterface(parameterType))
+                    {
+
+                        var  _serviceProvider = services.BuildServiceProvider();
+                        parametersValues.Add(_serviceProvider.GetService(parameterType));
+                    }
+                }
+            }
+
+            return parametersValues.ToArray();
+        }
+
+        private static bool IsTypeImplementGenericInterface(Type type)
+        {
+            if (!type.IsGenericType)
+                return false;
+            // Generic type defination stand for th IItrerface<> only the shallow for the interafce 
+            Type typeDefinition = type.GetGenericTypeDefinition();
+
+            return typeDefinition == typeof(IEventHandler<>) ;
+        }
 
         public static Assembly[] GetAllCommandsAssemblies()
         {
@@ -60,7 +131,7 @@ namespace MicroRabbit.Infra.Ioc
                 throw new ArgumentNullException("Commands assembly name is missing... ");
             }
 
-            return assemlies;
+            return assemlies.GroupBy(x=> x.FullName).Select(x=>x.FirstOrDefault()).ToArray();
         }
         
     }
