@@ -122,6 +122,7 @@ namespace MicroRabbit.Infra.Ioc
         public static Assembly[] GetAllCommandsAssemblies()
         {
 
+            // IsAssignableFrom mean is x (some type) Implment interfae rype
             var assemlies  =AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())
                  .Where(x => typeof(Command).IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
                  .Select(x => x.Assembly).ToArray();
